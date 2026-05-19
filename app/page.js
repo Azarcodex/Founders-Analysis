@@ -41,6 +41,11 @@ export default function Dashboard() {
   const [accountabilityLog, setAccountabilityLog] = useState("");
   const [checkingAccountability, setCheckingAccountability] = useState(false);
 
+  // Task updating / toggle feedback states
+  const [updatingTaskId, setUpdatingTaskId] = useState(null);
+  const [taskErrorId, setTaskErrorId] = useState(null);
+  const [taskErrorMessage, setTaskErrorMessage] = useState("");
+
   // Queries
   const { data: dashboardData, isLoading: tasksLoading } = useQuery({
     queryKey: ["dashboard", selectedDate],
@@ -105,12 +110,30 @@ export default function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Failed to update task");
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update task");
+      }
       return res.json();
+    },
+    onMutate: ({ id }) => {
+      setUpdatingTaskId(id);
+      setTaskErrorId(null);
+      setTaskErrorMessage("");
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["dashboard", selectedDate]);
       queryClient.invalidateQueries(["timeline"]);
+      setUpdatingTaskId(null);
+    },
+    onError: (err, { id }) => {
+      setUpdatingTaskId(null);
+      setTaskErrorId(id);
+      setTaskErrorMessage(err.message || "Failed to update task");
+      setTimeout(() => {
+        setTaskErrorId(null);
+        setTaskErrorMessage("");
+      }, 5000);
     },
   });
 
@@ -395,9 +418,12 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {activeTasks.map((task) => {
+                 {activeTasks.map((task) => {
                   const isCompleted = task.status === "completed";
                   const isMyTask = task.createdBy?._id?.toString() === user?._id?.toString();
+                  const isUpdating = updatingTaskId === task._id;
+                  const hasError = taskErrorId === task._id;
+                  
                   const priorityColors = {
                     high: "bg-rose-500/10 text-rose-400 border-rose-500/20",
                     medium: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -408,28 +434,35 @@ export default function Dashboard() {
                     <div
                       key={task._id}
                       className={`flex items-start justify-between gap-4 p-3.5 border rounded-xl bg-zinc-900/10 transition-all ${
-                        isCompleted
-                          ? "border-zinc-850 opacity-60 bg-zinc-950/20"
-                          : "border-zinc-800/80 hover:border-zinc-750 hover:bg-zinc-900/30"
+                        isUpdating
+                          ? "border-violet-500/30 bg-zinc-950/40 opacity-70 animate-pulse pointer-events-none"
+                          : isCompleted
+                            ? "border-zinc-850 opacity-60 bg-zinc-950/20"
+                            : "border-zinc-800/80 hover:border-zinc-750 hover:bg-zinc-900/30"
                       }`}
                     >
                       <div className="flex items-start gap-3 flex-1 min-w-0">
                         {/* Toggle Checkbox */}
                         <button
                           onClick={() => handleToggleTaskStatus(task)}
-                          disabled={!isMyTask}
+                          disabled={!isMyTask || isUpdating}
                           className={`mt-0.5 rounded-full transition shrink-0 ${
-                            !isMyTask ? "cursor-not-allowed opacity-50" : "hover:scale-105"
+                            !isMyTask || isUpdating ? "cursor-not-allowed opacity-50" : "hover:scale-105"
                           }`}
                         >
-                          {isCompleted ? (
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                          {isUpdating ? (
+                            <svg className="animate-spin w-5 h-5 text-violet-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : isCompleted ? (
+                            <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                           ) : (
-                            <Circle className="w-5 h-5 text-zinc-500 hover:text-violet-400" />
+                            <Circle className="w-5 h-5 text-zinc-500 hover:text-violet-400 shrink-0" />
                           )}
                         </button>
                         
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <h4 className={`text-sm font-bold text-zinc-200 truncate ${isCompleted ? "line-through text-zinc-500" : ""}`}>
                             {task.title}
                           </h4>
@@ -439,6 +472,14 @@ export default function Dashboard() {
                             </p>
                           )}
                           
+                          {/* Error Revert feedback */}
+                          {hasError && (
+                            <div className="text-[10px] font-bold text-rose-400 mt-2 flex items-center gap-1.5 bg-rose-500/5 border border-rose-500/10 p-1.5 rounded-md">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />
+                              <span>{taskErrorMessage || "Failed to update"}</span>
+                            </div>
+                          )}
+
                           {/* Metadata */}
                           <div className="flex items-center gap-3 mt-2.5 flex-wrap">
                             {/* Priority Badge */}
@@ -465,7 +506,8 @@ export default function Dashboard() {
                       {isMyTask && (
                         <button
                           onClick={() => handleDeleteTask(task._id)}
-                          className="text-zinc-600 hover:text-rose-400 transition p-1"
+                          disabled={isUpdating}
+                          className={`text-zinc-600 hover:text-rose-400 transition p-1 ${isUpdating ? "opacity-30 cursor-not-allowed" : ""}`}
                         >
                           <Trash2 className="w-4.5 h-4.5" />
                         </button>

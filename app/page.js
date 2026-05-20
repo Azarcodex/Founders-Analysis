@@ -17,7 +17,8 @@ import {
   Lightbulb, 
   Trash2, 
   PlayCircle,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -76,6 +77,15 @@ export default function Dashboard() {
       
       const allRes = await fetch("/api/future-analysis");
       return allRes.json();
+    },
+  });
+
+  const { data: founderCoreIdeasData } = useQuery({
+    queryKey: ["founderDashboardCoreIdeas"],
+    queryFn: async () => {
+      const res = await fetch("/api/founder/ideas");
+      if (!res.ok) throw new Error("Failed to fetch dashboard core ideas");
+      return res.json();
     },
   });
 
@@ -522,6 +532,68 @@ export default function Dashboard() {
 
         {/* Right Column: Strategic Updates & Activity Timeline */}
         <div className="space-y-6">
+          {/* Core Collaborations Widget */}
+          <div className="bg-zinc-950/30 border border-zinc-800/80 rounded-2xl p-6 backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
+                <Users className="w-4.5 h-4.5 text-violet-400" />
+                Core Collaborations
+              </h3>
+              <a 
+                href="/core-members" 
+                className="text-[10px] font-bold text-violet-400 hover:text-violet-300 uppercase tracking-wider"
+              >
+                Manage
+              </a>
+            </div>
+
+            <div className="space-y-3">
+              {founderCoreIdeasData?.ideas?.length === 0 ? (
+                <p className="text-zinc-555 text-xs py-2 text-center">No ideas submitted by team yet.</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-850 text-center">
+                      <span className="text-[9px] text-zinc-555 uppercase tracking-widest font-semibold block">Pending</span>
+                      <span className="text-sm font-bold text-amber-400">
+                        {founderCoreIdeasData?.ideas?.filter(i => i.status === "Pending Review").length || 0}
+                      </span>
+                    </div>
+                    <div className="bg-zinc-900/40 p-2.5 rounded-xl border border-zinc-850 text-center">
+                      <span className="text-[9px] text-zinc-555 uppercase tracking-widest font-semibold block">Total Ideas</span>
+                      <span className="text-sm font-bold text-zinc-300">
+                        {founderCoreIdeasData?.ideas?.length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {founderCoreIdeasData?.ideas?.slice(0, 3).map((idea) => (
+                      <div 
+                        key={idea._id}
+                        className="p-3 border border-zinc-850 bg-zinc-900/10 hover:border-zinc-800 transition rounded-xl"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className="text-[9px] text-zinc-550 font-bold">
+                            by {idea.createdBy?.name}
+                          </span>
+                          <span className={`px-1.5 py-0.2 rounded text-[7px] font-extrabold uppercase border ${
+                            idea.status === "Pending Review" ? "bg-zinc-800 text-zinc-400 border-zinc-750" : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          }`}>
+                            {idea.status}
+                          </span>
+                        </div>
+                        <h4 className="text-xs font-bold text-zinc-250 hover:text-violet-400 transition truncate">
+                          <a href="/core-members">{idea.title}</a>
+                        </h4>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Strategic Updates */}
           <div className="bg-zinc-950/30 border border-zinc-800/80 rounded-2xl p-6 backdrop-blur-xl">
             <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2 mb-4">

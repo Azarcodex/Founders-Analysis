@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
-import { AlertCircle, Lock, Mail, Server, Shield } from "lucide-react";
+import { useCoreAuth } from "@/context/CoreAuthContext";
+import { AlertCircle, Lock, Mail, Server, Users } from "lucide-react";
+import { motion } from "framer-motion";
 
-export default function LoginPage() {
-  const { login: founderLogin } = useAuth();
+export default function CoreLoginPage() {
+  const { login: coreLogin } = useCoreAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,20 +14,30 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [seedingStatus, setSeedingStatus] = useState("idle");
 
-  // Auto-seed database on page load to ensure founders exist
+  const [coreMembers, setCoreMembers] = useState([]);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
+
+  // Auto-seed and fetch core members on mount
   useEffect(() => {
-    const autoSeed = async () => {
+    const autoSeedAndFetch = async () => {
       try {
         setSeedingStatus("seeding");
-        // Seed founders
-        await fetch("/api/auth/seed");
+        // Trigger seeding
+        await fetch("/api/core/auth/seed");
         setSeedingStatus("seeded");
+        
+        // Fetch core list
+        const res = await fetch("/api/core/auth/list");
+        if (res.ok) {
+          const data = await res.json();
+          setCoreMembers(data.members || []);
+        }
       } catch (err) {
-        console.error("Auto seed failed", err);
+        console.error("Core auto seed or fetch failed", err);
         setSeedingStatus("error");
       }
     };
-    autoSeed();
+    autoSeedAndFetch();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -41,7 +52,7 @@ export default function LoginPage() {
     }
 
     try {
-      await founderLogin(email, password);
+      await coreLogin(email, password);
     } catch (err) {
       console.error(err);
       setError(err.message || "Invalid credentials. Please try again.");
@@ -50,8 +61,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleFounderQuickFill = (founderEmail) => {
-    setEmail(founderEmail);
+  const handleCoreQuickFill = (member) => {
+    setSelectedMemberId(member._id);
+    setEmail(member.email);
     setPassword("mallzo2026");
   };
 
@@ -64,13 +76,13 @@ export default function LoginPage() {
       {/* Main Container */}
       <div className="w-full max-w-lg bg-zinc-950/40 border border-zinc-800/85 rounded-2xl p-8 backdrop-blur-xl shadow-2xl relative z-10 my-8">
         
-        {/* Logo/Header */}
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 font-extrabold text-2xl tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent mb-2">
-            Mallzo <span className="text-zinc-100 font-light">OS</span>
+            Mallzo <span className="text-zinc-100 font-light">Workspace</span>
           </div>
           <p className="text-zinc-400 text-sm">
-            Collaboration & Accountability Operating System
+            Core Collaborator Hub Login
           </p>
         </div>
 
@@ -87,7 +99,7 @@ export default function LoginPage() {
           <div className="mb-6 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/80 text-[11px] text-zinc-500 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
-              Initializing secure databases...
+              Initializing secure workspace...
             </span>
             <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping" />
           </div>
@@ -97,17 +109,17 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="text-xs font-semibold text-zinc-400 block mb-2 uppercase tracking-wider">
-              Founder Email
+              Member Email
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-550">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                 <Mail className="w-4 h-4" />
               </span>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="founder@mallzo.com"
+                placeholder="member@mallzo.com"
                 className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-violet-500/80 focus:ring-1 focus:ring-violet-500/80 rounded-xl py-3 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-650 transition outline-none"
               />
             </div>
@@ -118,7 +130,7 @@ export default function LoginPage() {
               Password
             </label>
             <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-550">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                 <Lock className="w-4 h-4" />
               </span>
               <input
@@ -136,31 +148,48 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full py-3.5 rounded-xl bg-violet-650 hover:bg-violet-650/95 active:scale-[0.98] text-white font-semibold text-sm transition shadow-lg shadow-violet-950/45 flex items-center justify-center gap-2 cursor-pointer"
           >
-            {loading ? "Verifying..." : "Access Founder Portal"}
+            {loading ? "Verifying..." : "Access Core Workspace"}
           </button>
         </form>
 
         {/* Quick Credentials Panel */}
         <div className="mt-8 pt-6 border-t border-zinc-900/80">
           <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest text-center mb-4">
-            Quick-Fill Founder Credentials
+            Select Core Team Member
           </p>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { name: "Azarin", email: "azarin@mallzo.com" },
-              { name: "Najeeb", email: "najeeb@mallzo.com" },
-              { name: "Rima", email: "rima@mallzo.com" },
-            ].map((f) => (
-              <button
-                key={f.name}
-                onClick={() => handleFounderQuickFill(f.email)}
-                type="button"
-                className="py-2.5 px-2 rounded-xl bg-zinc-900/40 border border-zinc-850 hover:bg-zinc-900 hover:border-zinc-700 active:scale-[0.97] transition text-zinc-300 font-medium text-xs text-center cursor-pointer"
-              >
-                {f.name}
-              </button>
-            ))}
-          </div>
+          {coreMembers.length === 0 ? (
+            <div className="text-center py-2 text-zinc-650 text-xs">Loading members...</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto">
+              {coreMembers.map((member) => {
+                const isSelected = selectedMemberId === member._id;
+                return (
+                  <motion.button
+                    key={member._id}
+                    onClick={() => handleCoreQuickFill(member)}
+                    type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`p-4 rounded-xl flex flex-col items-center justify-center border text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-violet-950/20 border-violet-500 shadow-md shadow-violet-500/10 text-white font-bold"
+                        : "bg-zinc-900/30 border-zinc-850 hover:border-zinc-700 text-zinc-300"
+                    }`}
+                  >
+                    <img
+                      src={member.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${member.name}`}
+                      alt={member.name}
+                      className="w-12 h-12 rounded-full bg-zinc-850 border border-zinc-800 mb-2"
+                    />
+                    <span className="text-xs font-semibold truncate w-full">{member.name}</span>
+                    <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-1 block">
+                      {member.name === "Faeesa" ? "Co-Partner" : "Developer"}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

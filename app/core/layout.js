@@ -1,24 +1,23 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
+import { useCoreAuth } from "@/context/CoreAuthContext";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
-  BarChart3, 
   Lightbulb, 
   LogOut, 
   Bell, 
   Menu, 
   X,
-  User as UserIcon,
   Clock,
-  AlertTriangle
+  Heart,
+  MessageSquare
 } from "lucide-react";
 
-export default function Layout({ children }) {
-  const { user, logout } = useAuth();
+export default function CoreLayout({ children }) {
+  const { user, logout } = useCoreAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -28,14 +27,14 @@ export default function Layout({ children }) {
   // Fetch notifications
   const fetchNotifications = async () => {
     try {
-      const res = await fetch("/api/notifications");
+      const res = await fetch("/api/core/notifications");
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
         setUnreadCount(data.notifications.filter(n => !n.isRead).length);
       }
     } catch (e) {
-      console.error(e);
+      console.error("Core Layout fetch notifications error:", e);
     }
   };
 
@@ -50,7 +49,7 @@ export default function Layout({ children }) {
 
   const markAllAsRead = async () => {
     try {
-      const res = await fetch("/api/notifications", {
+      const res = await fetch("/api/core/notifications", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -65,41 +64,44 @@ export default function Layout({ children }) {
   };
 
   const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Analytics", href: "/analytics", icon: BarChart3 },
-    { name: "Future Analysis", href: "/future-analysis", icon: Lightbulb },
-    { name: "Core Members", href: "/core-members", icon: UserIcon },
+    { name: "Ideas Dashboard", href: "/core", icon: LayoutDashboard },
   ];
 
-
   if (!user) {
-    return <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">Loading session...</div>;
+    return (
+      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
+          <span className="text-zinc-500 text-sm">Authenticating Core Session...</span>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans flex flex-col md:flex-row">
       {/* Background radial glow */}
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.12),rgba(255,255,255,0))] pointer-events-none z-0" />
 
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex flex-col w-64 border-r border-zinc-800/80 bg-zinc-950/40 backdrop-blur-xl z-20 shrink-0">
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-zinc-800/65">
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
+          <Link href="/core" className="flex items-center gap-2 font-bold text-xl tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
             <span className="text-zinc-100">Mallzo</span>
-            <span className="text-xs px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-medium">OS</span>
+            <span className="text-xs px-1.5 py-0.5 rounded-md bg-zinc-800 text-violet-400 font-bold">CORE</span>
           </Link>
         </div>
 
         {/* User Card */}
         <div className="p-4 border-b border-zinc-800/65 flex items-center gap-3">
           <div className="relative">
-            <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800" />
+            <img src={user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.name}`} alt={user.name} className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800" />
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-zinc-900" />
           </div>
           <div className="overflow-hidden">
             <h4 className="font-semibold text-sm text-zinc-200 truncate">{user.name}</h4>
-            <p className="text-xs text-zinc-500 truncate capitalize">{user.email.split("@")[0]}</p>
+            <p className="text-xs text-zinc-500 truncate capitalize">Core Member</p>
           </div>
         </div>
 
@@ -129,7 +131,7 @@ export default function Layout({ children }) {
         <div className="p-4 border-t border-zinc-800/65">
           <button
             onClick={logout}
-            className="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-100 hover:bg-red-950/20 hover:text-red-400 transition-all duration-200"
+            className="flex w-full items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-100 hover:bg-red-950/20 hover:text-red-400 transition-all duration-200 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             Logout
@@ -139,15 +141,15 @@ export default function Layout({ children }) {
 
       {/* Mobile Header */}
       <header className="md:hidden flex h-16 items-center justify-between px-6 border-b border-zinc-800 bg-zinc-950/40 backdrop-blur-xl z-20">
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
+        <Link href="/core" className="flex items-center gap-2 font-bold text-xl tracking-tight">
           <span className="text-zinc-100">Mallzo</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-medium">OS</span>
+          <span className="text-xs px-1.5 py-0.5 rounded-md bg-zinc-800 text-violet-400 font-bold">CORE</span>
         </Link>
         <div className="flex items-center gap-4">
           {/* Notifications Trigger */}
           <button 
             onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative p-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 transition"
+            className="relative p-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 transition cursor-pointer"
           >
             <Bell className="w-4.5 h-4.5" />
             {unreadCount > 0 && (
@@ -157,7 +159,7 @@ export default function Layout({ children }) {
           
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300"
+            className="p-1.5 rounded-lg border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -191,10 +193,10 @@ export default function Layout({ children }) {
 
           <div className="border-t border-zinc-800 pt-6">
             <div className="flex items-center gap-3 mb-6">
-              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800" />
+              <img src={user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.name}`} alt={user.name} className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-800" />
               <div>
                 <h4 className="font-semibold text-zinc-200">{user.name}</h4>
-                <p className="text-xs text-zinc-500">{user.email}</p>
+                <p className="text-xs text-zinc-500">Core Member</p>
               </div>
             </div>
             <button
@@ -202,7 +204,7 @@ export default function Layout({ children }) {
                 setMobileMenuOpen(false);
                 logout();
               }}
-              className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-red-400 hover:bg-red-950/20 transition-all"
+              className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-base font-medium text-red-400 hover:bg-red-950/20 transition-all cursor-pointer"
             >
               <LogOut className="w-5 h-5" />
               Logout
@@ -211,7 +213,7 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      {/* Notification Center Panel (Desktop and Mobile overlay) */}
+      {/* Notification Center Panel */}
       {notificationsOpen && (
         <div className="absolute top-16 right-4 md:right-8 w-80 md:w-96 max-h-[500px] flex flex-col bg-zinc-950/90 border border-zinc-800 rounded-xl shadow-2xl backdrop-blur-2xl z-50 overflow-hidden">
           <div className="p-4 border-b border-zinc-850 flex items-center justify-between bg-zinc-900/30">
@@ -228,14 +230,14 @@ export default function Layout({ children }) {
               {unreadCount > 0 && (
                 <button 
                   onClick={markAllAsRead}
-                  className="text-xs text-violet-400 hover:text-violet-300 font-medium transition"
+                  className="text-xs text-violet-400 hover:text-violet-300 font-medium transition cursor-pointer"
                 >
                   Mark all read
                 </button>
               )}
               <button 
                 onClick={() => setNotificationsOpen(false)}
-                className="text-zinc-500 hover:text-zinc-300 transition"
+                className="text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -255,20 +257,26 @@ export default function Layout({ children }) {
                 });
                 
                 return (
-                  <div 
-                    key={notif._id} 
-                    className={`p-4 flex gap-3 transition hover:bg-zinc-900/40 ${
+                  <Link
+                    href={`/core/ideas/${notif.idea?._id || notif.idea}`}
+                    key={notif._id}
+                    onClick={() => setNotificationsOpen(false)}
+                    className={`p-4 flex gap-3 transition hover:bg-zinc-900/40 block ${
                       !notif.isRead ? "bg-violet-950/5 border-l-2 border-violet-500" : ""
                     }`}
                   >
                     <div className="mt-0.5 shrink-0">
-                      {notif.category === "alert" ? (
-                        <div className="p-1 rounded-md bg-amber-500/10 text-amber-500">
-                          <AlertTriangle className="w-4 h-4" />
-                        </div>
-                      ) : notif.category === "milestone" ? (
+                      {notif.type === "response" ? (
                         <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-500">
+                          <MessageSquare className="w-4 h-4" />
+                        </div>
+                      ) : notif.type === "status_change" ? (
+                        <div className="p-1 rounded-md bg-violet-500/10 text-violet-400">
                           <Lightbulb className="w-4 h-4" />
+                        </div>
+                      ) : notif.type === "like" ? (
+                        <div className="p-1 rounded-md bg-rose-500/10 text-rose-500">
+                          <Heart className="w-4 h-4" />
                         </div>
                       ) : (
                         <div className="p-1 rounded-md bg-blue-500/10 text-blue-500">
@@ -281,7 +289,7 @@ export default function Layout({ children }) {
                       <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">{notif.description}</p>
                       <span className="text-[10px] text-zinc-500 mt-2 block">{date}</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })
             )}
@@ -294,14 +302,14 @@ export default function Layout({ children }) {
         {/* Header Bar */}
         <header className="hidden md:flex h-16 items-center justify-between px-8 border-b border-zinc-800/40 bg-zinc-950/10 backdrop-blur-md">
           <div className="text-sm text-zinc-500">
-            Founder Collaboration Suite &bull; <span className="text-zinc-300 font-medium">Mallzo OS</span>
+            Core Member Operating Suite &bull; <span className="text-zinc-300 font-medium">Mallzo OS</span>
           </div>
           
           <div className="flex items-center gap-4">
             {/* Notification Trigger Desktop */}
             <button 
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative p-2 rounded-lg border border-zinc-800/80 bg-zinc-900/30 hover:bg-zinc-900/70 text-zinc-300 transition"
+              className="relative p-2 rounded-lg border border-zinc-800/80 bg-zinc-900/30 hover:bg-zinc-900/70 text-zinc-300 transition cursor-pointer"
             >
               <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
@@ -314,12 +322,12 @@ export default function Layout({ children }) {
             
             {/* User details */}
             <div className="flex items-center gap-3">
-              <img src={user.avatar} alt={user.name} className="w-8 h-8 rounded-full border border-zinc-700 bg-zinc-800" />
+              <img src={user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.name}`} alt={user.name} className="w-8 h-8 rounded-full border border-zinc-700 bg-zinc-800" />
               <div className="text-left">
                 <p className="text-xs font-semibold text-zinc-200">{user.name}</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] text-emerald-400 font-medium">Online</span>
+                  <span className="text-[10px] text-emerald-400 font-medium">Active</span>
                 </div>
               </div>
             </div>

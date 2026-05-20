@@ -182,9 +182,6 @@ export default function CoreLoginPage() {
                       className="w-12 h-12 rounded-full bg-zinc-850 border border-zinc-800 mb-2"
                     />
                     <span className="text-xs font-semibold truncate w-full">{member.name}</span>
-                    <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest mt-1 block">
-                      {member.name === "Faeesa" ? "Co-Partner" : "Developer"}
-                    </span>
                   </motion.button>
                 );
               })}

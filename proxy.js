@@ -29,8 +29,13 @@ export function proxy(request) {
 
   // Protect Core Member routes
   const isCorePath = path === "/core" || path.startsWith("/core/");
-  if (isCorePath && !coreToken) {
-    return NextResponse.redirect(new URL("/login/core", request.url));
+  if (isCorePath) {
+    if (founderToken && !coreToken) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    if (!coreToken) {
+      return NextResponse.redirect(new URL("/login/core", request.url));
+    }
   }
 
   // Protect Founder routes
@@ -40,8 +45,13 @@ export function proxy(request) {
     path.startsWith("/future-analysis") ||
     path.startsWith("/core-members");
 
-  if (isFounderPath && !founderToken) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (isFounderPath) {
+    if (coreToken && !founderToken) {
+      return NextResponse.redirect(new URL("/core", request.url));
+    }
+    if (!founderToken) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
   }
 
   // Protect API routes

@@ -2,7 +2,7 @@
 
 import { useCoreAuth } from "@/context/CoreAuthContext";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
@@ -17,8 +17,16 @@ import {
 } from "lucide-react";
 
 export default function CoreLayout({ children }) {
-  const { user, logout } = useCoreAuth();
+  const { user, loading, logout } = useCoreAuth();
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Redirect to login once auth check is done and there is no user
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/login/core");
+    }
+  }, [loading, user, router]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -68,12 +76,15 @@ export default function CoreLayout({ children }) {
     { name: "Future Analysis", href: "/core/future-analysis", icon: Lightbulb },
   ];
 
-  if (!user) {
+  // Show spinner while session check is in progress
+  if (loading || !user) {
     return (
       <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center font-sans">
         <div className="flex flex-col items-center gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-500"></div>
-          <span className="text-zinc-500 text-sm">Authenticating Core Session...</span>
+          <span className="text-zinc-500 text-sm">
+            {loading ? "Authenticating Core Session..." : "Redirecting to login..."}
+          </span>
         </div>
       </div>
     );

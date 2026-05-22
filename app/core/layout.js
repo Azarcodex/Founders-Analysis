@@ -65,6 +65,7 @@ export default function CoreLayout({ children }) {
 
   const navItems = [
     { name: "Ideas Dashboard", href: "/core", icon: LayoutDashboard },
+    { name: "Future Analysis", href: "/core/future-analysis", icon: Lightbulb },
   ];
 
   if (!user) {

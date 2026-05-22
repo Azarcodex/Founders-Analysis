@@ -15,7 +15,18 @@ const CommentSchema = new mongoose.Schema(
     founder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      default: null,
+    },
+    coreMember: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CoreMember",
+      default: null,
+    },
+    userType: {
+      type: String,
+      enum: ["Founder", "CoreMember"],
       required: true,
+      default: "Founder",
     },
   },
   { timestamps: true }

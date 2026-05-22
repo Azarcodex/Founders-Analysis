@@ -588,14 +588,33 @@ export default function FutureAnalysis() {
                         <div key={comment._id} className="p-3 rounded-xl border border-zinc-900 bg-zinc-900/10 text-left">
                           <div className="flex items-center justify-between gap-3 mb-1.5">
                             <div className="flex items-center gap-2">
-                              <img src={comment.founder.avatar} alt={comment.founder.name} className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-850" />
-                              <span className="text-[11px] font-bold text-zinc-200">{comment.founder.name}</span>
+                              {(() => {
+                                const isFounder = comment.userType === "Founder" || comment.founder;
+                                const name = isFounder ? comment.founder?.name : comment.coreMember?.name;
+                                const avatar = isFounder ? comment.founder?.avatar : comment.coreMember?.avatar;
+                                const badge = isFounder ? "FOUNDER" : "TEAM";
+                                return (
+                                  <>
+                                    <img 
+                                      src={avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name || "Member"}`} 
+                                      alt={name || "Member"} 
+                                      className="w-5 h-5 rounded-full bg-zinc-800 border border-zinc-850" 
+                                    />
+                                    <span className="text-[11px] font-bold text-zinc-200">{name || "Member"}</span>
+                                    <span className={`text-[8px] font-extrabold px-1.5 py-0.5 rounded ${
+                                      isFounder ? "bg-violet-500/10 text-violet-400 border border-violet-500/20" : "bg-zinc-800 text-zinc-500"
+                                    }`}>
+                                      {badge}
+                                    </span>
+                                  </>
+                                );
+                              })()}
                             </div>
                             <span className="text-[9px] text-zinc-500">
                               {dateStr} &bull; {timeStr}
                             </span>
                           </div>
-                          <p className="text-xs text-zinc-350 leading-relaxed pl-7">
+                          <p className="text-xs text-zinc-350 leading-relaxed pl-7.5">
                             {comment.content}
                           </p>
                         </div>

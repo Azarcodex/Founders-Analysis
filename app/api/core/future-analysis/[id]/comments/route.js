@@ -2,11 +2,15 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import Comment from "@/models/Comment";
 import FutureAnalysis from "@/models/FutureAnalysis";
-import ActivityLog from "@/models/ActivityLog";
-import { getSessionUser } from "@/lib/auth";
+import { getCoreSessionUser } from "@/lib/coreAuth";
 
 export async function GET(request, { params }) {
   try {
+    const session = await getCoreSessionUser();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     await connectToDatabase();
 
@@ -20,7 +24,7 @@ export async function GET(request, { params }) {
       comments,
     });
   } catch (error) {
-    console.error("Fetch comments error:", error);
+    console.error("Fetch core comments error:", error);
     return NextResponse.json(
       { error: "Internal Server Error while fetching comments" },
       { status: 500 }
@@ -30,7 +34,7 @@ export async function GET(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const session = await getSessionUser();
+    const session = await getCoreSessionUser();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -52,20 +56,12 @@ export async function POST(request, { params }) {
     const comment = await Comment.create({
       content: content.trim(),
       analysisId: id,
-      founder: session.id,
+      coreMember: session.id,
+      userType: "CoreMember",
     });
 
-    // Log activity
-    await ActivityLog.create({
-      founder: session.id,
-      action: "added_comment",
-      details: `Commented on: "${note.title}"`,
-      type: "comment",
-    });
-
-    // We can populate the founder details on comment to return it directly to the UI
     const populatedComment = await Comment.findById(comment._id).populate(
-      "founder",
+      "coreMember",
       "name email avatar status"
     );
 
@@ -74,7 +70,7 @@ export async function POST(request, { params }) {
       comment: populatedComment,
     });
   } catch (error) {
-    console.error("Create comment error:", error);
+    console.error("Create core comment error:", error);
     return NextResponse.json(
       { error: "Internal Server Error while adding comment" },
       { status: 500 }

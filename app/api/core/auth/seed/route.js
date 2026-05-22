@@ -7,8 +7,14 @@ export async function GET() {
   try {
     await connectToDatabase();
 
-    // Clear any existing core members to reset to correct list
-    await CoreMember.deleteMany({});
+    // Only seed if no core members exist yet
+    const count = await CoreMember.countDocuments();
+    if (count > 0) {
+      return NextResponse.json({
+        message: "Core members already exist. Skipping seed.",
+        success: true,
+      });
+    }
 
     const defaultPassword = "mallzo2026";
     const salt = await bcrypt.genSalt(10);

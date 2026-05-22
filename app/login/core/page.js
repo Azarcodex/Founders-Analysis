@@ -17,27 +17,23 @@ export default function CoreLoginPage() {
   const [coreMembers, setCoreMembers] = useState([]);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
 
-  // Auto-seed and fetch core members on mount
+  // Fetch core members on mount (no auto-seeding – seeding is admin-only)
   useEffect(() => {
-    const autoSeedAndFetch = async () => {
+    const fetchMembers = async () => {
       try {
         setSeedingStatus("seeding");
-        // Trigger seeding
-        await fetch("/api/core/auth/seed");
-        setSeedingStatus("seeded");
-        
-        // Fetch core list
         const res = await fetch("/api/core/auth/list");
         if (res.ok) {
           const data = await res.json();
           setCoreMembers(data.members || []);
         }
+        setSeedingStatus("seeded");
       } catch (err) {
-        console.error("Core auto seed or fetch failed", err);
+        console.error("Failed to fetch core member list", err);
         setSeedingStatus("error");
       }
     };
-    autoSeedAndFetch();
+    fetchMembers();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -94,12 +90,12 @@ export default function CoreLoginPage() {
           </div>
         )}
 
-        {/* Seeding Indicator */}
+        {/* Members Loading Indicator */}
         {seedingStatus === "seeding" && (
           <div className="mb-6 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/80 text-[11px] text-zinc-500 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Server className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
-              Initializing secure workspace...
+              Loading team members...
             </span>
             <span className="w-2 h-2 rounded-full bg-violet-500 animate-ping" />
           </div>

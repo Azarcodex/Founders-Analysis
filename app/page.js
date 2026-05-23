@@ -97,7 +97,7 @@ export default function Dashboard() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newTask),
       });
-      if (!res.ok) throw new Error("Failed to create task");
+      if (!res.ok) throw new Error("Failed to create the  task");
       return res.json();
     },
     onSuccess: () => {
@@ -109,7 +109,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries(["timeline"]);
     },
     onError: (err) => {
-      setTaskError(err.message || "Failed to create task");
+      setTaskError(err.message || "Failed to create the task");
     }
   });
 
